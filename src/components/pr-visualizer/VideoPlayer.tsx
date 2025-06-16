@@ -1,6 +1,8 @@
 
-import React, { useRef, useState } from 'react';
-import { Player, type PlayerRef } from '@remotion/player';
+"use client"; // Ensure this is a client component
+
+import React, { useRef, useState, useEffect } from 'react';
+import type { PlayerRef } from '@remotion/player'; // Keep type import
 import type { PRData } from '@/lib/github-types';
 import { MyComposition } from '@/remotion';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
@@ -9,6 +11,13 @@ import { Button } from '@/components/ui/button';
 import { Download, Terminal } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useToast } from "@/hooks/use-toast";
+import dynamic from 'next/dynamic';
+
+// Dynamically import the Player component
+const Player = dynamic(() => import('@remotion/player').then((mod) => mod.Player), {
+  ssr: false,
+  loading: () => <div className="w-full h-full flex items-center justify-center bg-muted"><p>Loading Player...</p></div>,
+});
 
 interface VideoPlayerProps {
   prData: PRData | null;
@@ -20,6 +29,16 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ prData, compositionId 
   const [isRecording, setIsRecording] = useState(false);
   const [downloadError, setDownloadError] = useState<string | null>(null);
   const { toast } = useToast();
+  const [isPlayerReady, setIsPlayerReady] = useState(false); // Track player readiness
+
+  useEffect(() => {
+    // This effect helps ensure playerRef is likely populated when player is ready
+    // However, the dynamic import itself is the main fix for the method availability
+    if (playerRef.current) {
+        setIsPlayerReady(true);
+    }
+  }, []);
+
 
   if (!prData) {
     return null;
@@ -28,7 +47,26 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ prData, compositionId 
   const { durationInFrames, width, height, fps } = calculateVideoDuration(prData);
 
   const handleDownload = async () => {
-    if (!playerRef.current || !prData) return;
+    if (!playerRef.current || !prData) {
+        toast({
+            variant: "destructive",
+            title: "Player Not Ready",
+            description: "The video player is not ready. Please try again in a moment.",
+        });
+        return;
+    }
+    
+    // Defensive check for the record method
+    if (typeof playerRef.current.record !== 'function') {
+        console.error("playerRef.current.record is not a function. PlayerRef:", playerRef.current);
+        toast({
+            variant: "destructive",
+            title: "Recording Error",
+            description: "The recording function is not available. The player might not have initialized correctly.",
+        });
+        setDownloadError("Recording function not available.");
+        return;
+    }
 
     setIsRecording(true);
     setDownloadError(null);
@@ -40,7 +78,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ prData, compositionId 
     try {
       const blob = await playerRef.current.record({
         // You can specify codec options here if needed, default is often 'vp9' for WebM
-        // quality: 0.8,
+        // quality: 0.8, // Example: adjust quality
       });
       
       if (blob) {
@@ -97,6 +135,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ prData, compositionId 
             loop={false}
             showVolumeControls={false}
             clickToPlay
+            // onReady={() => setIsPlayerReady(true)} // Another way to check readiness
           />
         </div>
       </CardContent>
