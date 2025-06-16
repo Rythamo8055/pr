@@ -44,7 +44,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ prData, compositionId 
 
   const handleDownload = async () => {
     if (!playerRef.current) {
-      console.error("Player ref is null. Cannot record.");
+      console.error("Player ref is null when handleDownload is called. Cannot record.");
       toast({
         variant: "destructive",
         title: "Player Not Ready",
@@ -59,8 +59,9 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ prData, compositionId 
       const currentRefValue = playerRef.current;
       const refKeys = Object.keys(currentRefValue);
       console.error(
-        `playerRef.current.record is not a function. PlayerRef is an object with keys: [${refKeys.join(', ')}]. Full ref:`, 
-        currentRefValue
+        `playerRef.current.record is not a function. PlayerRef current value is:`, 
+        currentRefValue,
+        `Keys on playerRef.current: [${refKeys.join(', ')}]`
       );
       toast({
         variant: "destructive",
@@ -139,7 +140,17 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ prData, compositionId 
             showVolumeControls={false}
             clickToPlay
             onReady={() => {
-              console.log("Remotion Player onReady fired. playerRef.current:", playerRef.current);
+              console.log("Remotion Player onReady fired. Current playerRef.current:", playerRef.current);
+              const currentRefValue = playerRef.current;
+              if (currentRefValue) {
+                const refKeys = Object.keys(currentRefValue);
+                console.log(`Keys on playerRef.current in onReady: [${refKeys.join(', ')}]`);
+                if (typeof currentRefValue.record === 'function') {
+                  console.log("playerRef.current.record IS a function in onReady.");
+                } else {
+                  console.warn("playerRef.current.record is NOT a function in onReady.");
+                }
+              }
               setIsPlayerComponentReady(true);
             }}
             onError={(e) => {
