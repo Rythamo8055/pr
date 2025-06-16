@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { AbsoluteFill, Img, staticFile, useCurrentFrame, interpolate, Easing } from 'remotion';
 import { Card } from '@/components/ui/card'; // Shadcn card for glassmorphism base
@@ -17,9 +18,10 @@ export const SceneContainer: React.FC<SceneContainerProps> = ({ children, classN
   let finalBgSrc: string | undefined = undefined;
   if (bgImage) {
     if (bgImage.startsWith('http://') || bgImage.startsWith('https://')) {
-      finalBgSrc = bgImage;
+      finalBgSrc = bgImage; // Use as-is if absolute URL
     } else {
-      finalBgSrc = staticFile(bgImage);
+      // Assumes bgImage is a relative path to a file in public/
+      finalBgSrc = staticFile(bgImage); 
     }
   }
 
