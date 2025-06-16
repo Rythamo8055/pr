@@ -27,7 +27,7 @@ export const TitleScene: React.FC<TitleSceneProps> = ({ prDetails }) => {
   };
 
   return (
-    <SceneContainer bgImage="tech-background.png">
+    <SceneContainer bgImage={`https://placehold.co/${WIDTH}x${HEIGHT}.png`}>
       <div className="text-center flex flex-col items-center justify-center h-full">
         <h1
           className="font-headline text-6xl md:text-7xl font-bold text-primary-foreground mb-6 text-shadow-md leading-tight"

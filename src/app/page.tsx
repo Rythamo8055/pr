@@ -24,9 +24,6 @@ export default function HomePage() {
     // Example: if you had a staticFile('background.png') in a scene
     // new window.Image().src = '/background.png'; // Assuming it's in public folder
     // For this project, we use a placeholder directly or a generated one.
-    // No specific preload needed for a dynamically placed one based on current code.
-    // Adding a placeholder for the tech background image used in TitleScene
-    new window.Image().src = '/tech-background.png';
   }, []);
 
 

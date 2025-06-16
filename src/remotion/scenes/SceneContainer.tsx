@@ -14,21 +14,25 @@ export const SceneContainer: React.FC<SceneContainerProps> = ({ children, classN
   const opacity = interpolate(frame, [0, 15], [0, 1], { extrapolateRight: 'clamp', easing: Easing.inOut(Easing.ease) });
   const scale = interpolate(frame, [0, 20], [0.95, 1], { extrapolateRight: 'clamp', easing: Easing.out(Easing.back(1)) });
 
+  let finalBgSrc: string | undefined = undefined;
+  if (bgImage) {
+    if (bgImage.startsWith('http://') || bgImage.startsWith('https://')) {
+      finalBgSrc = bgImage;
+    } else {
+      finalBgSrc = staticFile(bgImage);
+    }
+  }
+
   return (
     <AbsoluteFill 
       className={`flex items-center justify-center p-8 font-body ${className || ''}`}
       style={{ 
         opacity, 
         transform: `scale(${scale})`,
-        // background: bgImage ? `url(${staticFile(bgImage)}) center/cover` : 'transparent',
       }}
     >
-      {/* 
-        Using a div instead of ShadCN Card directly because Remotion rendering works better with basic HTML.
-        The glassmorphism styles will be applied via Tailwind classes.
-      */}
       <div className="glassmorphism rounded-xl w-full h-full p-8 flex flex-col items-center justify-center relative overflow-hidden">
-         {bgImage && <Img src={staticFile(bgImage)} className="absolute inset-0 w-full h-full object-cover opacity-20 -z-10" />}
+         {finalBgSrc && <Img src={finalBgSrc} className="absolute inset-0 w-full h-full object-cover opacity-20 -z-10" data-ai-hint="tech background" />}
         {title && (
           <h2 
             className="font-headline text-5xl text-primary mb-8 text-shadow-md"
