@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Img, useCurrentFrame, interpolate, Easing } from 'remotion';
+import { Img, useCurrentFrame, interpolate, Easing, spring, useVideoConfig } from 'remotion';
 import type { GitHubPullRequest } from '@/lib/github-types';
 import { SceneContainer } from './SceneContainer';
 import { WIDTH, HEIGHT } from '../config';
@@ -11,20 +11,42 @@ interface TitleSceneProps {
 
 export const TitleScene: React.FC<TitleSceneProps> = ({ prDetails }) => {
   const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+
+  const titleSpring = spring({
+    frame,
+    fps,
+    config: { stiffness: 100, damping: 15, mass: 1.2 },
+    delay: fps * 0.2,
+  });
 
   const titleAnimation = {
-    opacity: interpolate(frame, [0, 20], [0, 1], { easing: Easing.out(Easing.ease) }),
-    transform: `translateY(${interpolate(frame, [0, 20], [50, 0], { easing: Easing.out(Easing.cubic) })}px)`,
+    opacity: titleSpring,
+    transform: `translateY(${interpolate(titleSpring, [0, 1], [50, 0])}px) scale(${interpolate(titleSpring, [0,1],[0.9,1])})`,
   };
 
+  const avatarSpring = spring({
+    frame,
+    fps,
+    config: { stiffness: 120, damping: 10, mass: 1 },
+    delay: fps * 0.5,
+  });
+
   const avatarAnimation = {
-    opacity: interpolate(frame, [15, 35], [0, 1], { easing: Easing.out(Easing.ease) }),
-    transform: `scale(${interpolate(frame, [15, 35], [0.5, 1], { easing: Easing.out(Easing.back(1.7)) })})`,
+    opacity: avatarSpring,
+    transform: `scale(${interpolate(avatarSpring, [0, 1], [0.5, 1])})`,
   };
   
+  const detailsSpring = spring({
+    frame,
+    fps,
+    config: { stiffness: 90, damping: 18 },
+    delay: fps * 0.8,
+  });
+
   const detailsAnimation = {
-    opacity: interpolate(frame, [25, 45], [0, 1], { easing: Easing.out(Easing.ease) }),
-    transform: `translateY(${interpolate(frame, [25, 45], [30, 0], { easing: Easing.out(Easing.cubic) })}px)`,
+    opacity: detailsSpring,
+    transform: `translateY(${interpolate(detailsSpring, [0, 1], [30, 0])}px)`,
   };
 
   return (
@@ -42,12 +64,12 @@ export const TitleScene: React.FC<TitleSceneProps> = ({ prDetails }) => {
             <Img
               src={prDetails.user.avatar_url}
               alt={`${prDetails.user.login}'s avatar`}
-              className="w-20 h-20 rounded-full border-4 border-primary shadow-lg mr-4"
+              className="w-20 h-20 rounded-full border-4 border-primary/80 shadow-lg mr-4"
               width={80}
               height={80}
-              data-ai-hint="profile avatar"
+              data-ai-hint="profile avatar tech"
             />
-            <p className="text-3xl text-secondary-foreground font-medium">
+            <p className="text-3xl text-secondary-foreground font-medium text-shadow-sm">
               @{prDetails.user.login}
             </p>
           </div>
@@ -56,9 +78,9 @@ export const TitleScene: React.FC<TitleSceneProps> = ({ prDetails }) => {
         <div style={detailsAnimation} className="text-2xl text-muted-foreground">
             <p className="mb-2">PR #{prDetails.number}</p>
             <p>
-              <span className="font-semibold text-accent">{prDetails.head.ref}</span>
+              <span className="font-semibold text-accent/90">{prDetails.head.ref}</span>
               {' → '}
-              <span className="font-semibold text-primary">{prDetails.base.ref}</span>
+              <span className="font-semibold text-primary/90">{prDetails.base.ref}</span>
             </p>
         </div>
 

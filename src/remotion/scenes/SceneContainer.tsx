@@ -1,46 +1,70 @@
 
 import React from 'react';
-import { AbsoluteFill, Img, staticFile, useCurrentFrame, interpolate, Easing } from 'remotion';
-import { Card } from '@/components/ui/card'; // Shadcn card for glassmorphism base
+import { AbsoluteFill, Img, staticFile, useCurrentFrame, interpolate, Easing, useVideoConfig } from 'remotion';
 
 interface SceneContainerProps {
   children: React.ReactNode;
   className?: string;
-  title?: string; // Optional title for the scene
-  bgImage?: string; // Optional background image for the scene
+  title?: string;
+  bgImage?: string; 
 }
 
 export const SceneContainer: React.FC<SceneContainerProps> = ({ children, className, title, bgImage }) => {
   const frame = useCurrentFrame();
-  const opacity = interpolate(frame, [0, 15], [0, 1], { extrapolateRight: 'clamp', easing: Easing.inOut(Easing.ease) });
-  const scale = interpolate(frame, [0, 20], [0.95, 1], { extrapolateRight: 'clamp', easing: Easing.out(Easing.back(1)) });
+  const { fps } = useVideoConfig();
+
+  // Scene entry animation (subtle fade and scale)
+  const sceneEntryProgress = interpolate(frame, [0, fps * 0.5], [0, 1], { 
+    extrapolateRight: 'clamp', 
+    easing: Easing.out(Easing.ease) 
+  });
+  const sceneOpacity = sceneEntryProgress;
+  const sceneScale = interpolate(sceneEntryProgress, [0, 1], [0.98, 1]);
+
 
   let finalBgSrc: string | undefined = undefined;
+  let isExternalImage = false;
   if (bgImage) {
     if (bgImage.startsWith('http://') || bgImage.startsWith('https://')) {
-      finalBgSrc = bgImage; // Use as-is if absolute URL
+      finalBgSrc = bgImage;
+      isExternalImage = true;
     } else {
-      // Assumes bgImage is a relative path to a file in public/
-      finalBgSrc = staticFile(bgImage); 
+      try {
+        finalBgSrc = staticFile(bgImage);
+      } catch (e) {
+        console.error(`Error loading static file for bgImage "${bgImage}":`, e);
+        finalBgSrc = undefined; // Fallback if staticFile fails
+      }
     }
   }
+  
+  // Title animation
+  const titleOpacity = interpolate(frame, [fps * 0.2, fps * 0.7], [0,1], {extrapolateRight: 'clamp', easing: Easing.out(Easing.ease)});
+  const titleY = interpolate(frame, [fps * 0.2, fps * 0.7], [20,0], {extrapolateRight: 'clamp', easing: Easing.out(Easing.back(0.5))});
+
 
   return (
     <AbsoluteFill 
-      className={`flex items-center justify-center p-8 font-body ${className || ''}`}
+      className={`flex items-center justify-center p-4 md:p-8 font-body ${className || ''}`}
       style={{ 
-        opacity, 
-        transform: `scale(${scale})`,
+        opacity: sceneOpacity, 
+        transform: `scale(${sceneScale})`,
       }}
     >
-      <div className="glassmorphism rounded-xl w-full h-full p-8 flex flex-col items-center justify-center relative overflow-hidden">
-         {finalBgSrc && <Img src={finalBgSrc} className="absolute inset-0 w-full h-full object-cover opacity-20 -z-10" data-ai-hint="tech background" />}
+      <div className="glassmorphism rounded-xl w-full h-full p-6 md:p-8 flex flex-col items-center justify-start relative overflow-hidden">
+         {finalBgSrc && (
+            <Img 
+                src={finalBgSrc} 
+                className="absolute inset-0 w-full h-full object-cover opacity-20 -z-10" 
+                data-ai-hint={isExternalImage ? "background image" : "tech pattern"} // Generic hint if external
+            />
+         )}
         {title && (
           <h2 
-            className="font-headline text-5xl text-primary mb-8 text-shadow-md"
+            className="font-headline text-4xl md:text-5xl text-primary mb-6 md:mb-8 text-shadow-md text-center"
             style={{
-              opacity: interpolate(frame, [5, 25], [0,1], {extrapolateRight: 'clamp'}),
-              transform: `translateY(${interpolate(frame, [5,25], [20,0], {extrapolateRight: 'clamp'})}px)`
+              opacity: titleOpacity,
+              transform: `translateY(${titleY}px)`
             }}
           >
             {title}
