@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -19,11 +20,11 @@ body {
     --secondary: 208 60% 90%; /* Lighter blue */
     --secondary-foreground: 204 70% 40%; /* Darker primary */
     --muted: 208 50% 85%;
-    --muted-foreground: 208 30% 50%;
+    --muted-foreground: 208 30% 50%; /* A bit darker for better contrast */
     --accent: 145 63% 49%; /* #2ecc71 - Vibrant green */
     --accent-foreground: 0 0% 100%; /* White */
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
+    --destructive: 0 84.2% 60.2%; /* Red */
+    --destructive-foreground: 0 0% 98%; /* White */
     --border: 208 50% 88%; /* Adjusted border for light theme */
     --input: 208 50% 92%; /* Lighter input background */
     --ring: 204 70% 53%; /* Primary color for ring */
@@ -96,5 +97,19 @@ body {
   }
   .text-shadow-md {
     text-shadow: 0 4px 6px var(--tw-shadow-color, rgba(0,0,0,0.1));
+  }
+  /* Custom scrollbar for Remotion code diff if needed */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    @apply bg-muted/30 rounded-full;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-primary/50 rounded-full;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    @apply bg-primary/70;
   }
 }

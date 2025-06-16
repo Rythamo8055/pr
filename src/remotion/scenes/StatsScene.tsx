@@ -8,13 +8,16 @@ import { FileText, GitCommit, PlusCircle, MinusCircle } from 'lucide-react';
 const Counter: React.FC<{ from: number; to: number; durationInFrames?: number }> = ({ from, to, durationInFrames }) => {
     const frame = useCurrentFrame();
     const { fps } = useVideoConfig();
-    const actualDuration = durationInFrames || fps; 
+    const actualDuration = durationInFrames || fps * 1.5; // Count up over 1.5 seconds by default
 
-    const count = interpolate(frame, [0, actualDuration], [from, to], {
-        extrapolateLeft: 'clamp',
-        extrapolateRight: 'clamp',
+    const countSpring = spring({
+        frame,
+        fps,
+        config: { damping: 30, stiffness: 100, mass:1.5 },
+        durationInFrames: actualDuration,
     });
-    return <span>{Math.round(count)}</span>;
+    const currentCount = interpolate(countSpring, [0, 1], [from, to]);
+    return <span>{Math.round(currentCount)}</span>;
 };
 
 interface StatItemProps {
@@ -22,7 +25,7 @@ interface StatItemProps {
   label: string;
   value: number;
   colorClass: string;
-  delayFactor: number; 
+  delayFactor: number;
   isCounter?: boolean;
 }
 
@@ -38,7 +41,7 @@ const StatItem: React.FC<StatItemProps> = ({ icon: Icon, label, value, colorClas
       stiffness: 120,
       mass: 0.8,
     },
-    delay: fps * delayFactor, 
+    delay: fps * delayFactor,
   });
 
   const itemOpacity = itemSpring;
@@ -69,11 +72,13 @@ const StatBar: React.FC<{ label: string; value: number; maxValue: number; colorC
 
   const barSpring = spring({
     fps,
-    frame: frame - (fps * delayFactor), 
+    frame: frame - (fps * delayFactor),
     config: { damping: 18, stiffness: 130 }
   });
 
-  const barWidthPercent = interpolate(barSpring, [0, 1], [0, Math.min(100, (value / Math.max(1, maxValue)) * 100)]);
+  // Ensure maxValue is at least 1 to prevent division by zero
+  const safeMaxValue = Math.max(1, maxValue);
+  const barWidthPercent = interpolate(barSpring, [0, 1], [0, Math.min(100, (value / safeMaxValue) * 100)]);
   const opacity = barSpring;
   const translateY = interpolate(barSpring, [0,1], [15,0]);
 
@@ -92,10 +97,10 @@ const StatBar: React.FC<{ label: string; value: number; maxValue: number; colorC
           <Counter from={0} to={value} durationInFrames={fps * 1.2} />
         </span>
       </div>
-      <div className={`w-full h-4 rounded ${barBgClass} overflow-hidden`}>
+      <div className={`w-full h-4 rounded ${barBgClass} overflow-hidden border border-border/50`}>
         <div
-          className={`h-full rounded transition-all duration-500 ease-out`}
-          style={{ width: `${barWidthPercent}%`, backgroundColor: `hsl(var(--${colorClass.replace('text-','')}))` }}
+          className={`h-full rounded transition-all duration-500 ease-out ${colorClass.replace('text-', 'bg-')}`} // Use bg-accent, bg-destructive
+          style={{ width: `${barWidthPercent}%` }}
         />
       </div>
     </div>
@@ -108,13 +113,13 @@ interface StatsSceneProps {
 
 export const StatsScene: React.FC<StatsSceneProps> = ({ prDetails }) => {
   const maxChanges = Math.max(1, prDetails.additions || 0, prDetails.deletions || 0);
-  const { fps } = useVideoConfig();
+  const { fps } = useVideoConfig(); // Not directly used here but good for context
 
   return (
     <SceneContainer title="Pull Request Stats">
       <div className="grid grid-cols-2 gap-4 md:gap-6 mb-6">
-        <StatItem icon={GitCommit} label="Commits" value={prDetails.commits || 0} colorClass="text-primary" delayFactor={0} isCounter />
-        <StatItem icon={FileText} label="Files Changed" value={prDetails.changed_files || 0} colorClass="text-yellow-500" delayFactor={0.2} isCounter />
+        <StatItem icon={GitCommit} label="Commits" value={prDetails.commits || 0} colorClass="text-primary" delayFactor={0.1} isCounter />
+        <StatItem icon={FileText} label="Files Changed" value={prDetails.changed_files || 0} colorClass="text-yellow-500" delayFactor={0.3} isCounter />
       </div>
       <div className="w-full max-w-md">
         <StatBar
@@ -122,18 +127,18 @@ export const StatsScene: React.FC<StatsSceneProps> = ({ prDetails }) => {
             label="Lines Added"
             value={prDetails.additions || 0}
             maxValue={maxChanges}
-            colorClass="text-accent"
-            barBgClass="bg-accent/20"
-            delayFactor={0.4}
+            colorClass="text-accent" // This class provides the text color
+            barBgClass="bg-accent/20" // Light background for the bar track
+            delayFactor={0.5}
         />
         <StatBar
             icon={MinusCircle}
             label="Lines Deleted"
             value={prDetails.deletions || 0}
             maxValue={maxChanges}
-            colorClass="text-destructive"
-            barBgClass="bg-destructive/20"
-            delayFactor={0.6}
+            colorClass="text-destructive" // This class provides the text color
+            barBgClass="bg-destructive/20" // Light background for the bar track
+            delayFactor={0.7}
         />
       </div>
     </SceneContainer>

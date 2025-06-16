@@ -9,20 +9,20 @@ import { Lightbulb } from 'lucide-react';
 
 interface CodeDiffSceneProps {
   files: GitHubFile[];
-  diffContent: string; 
+  diffContent: string;
   codeInsights?: string;
 }
 
 export const CodeDiffScene: React.FC<CodeDiffSceneProps> = ({ files, diffContent, codeInsights }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const durationPerFileInFrames = DURATION_PER_FILE_DIFF * FPS; 
+  const durationPerFileInFrames = DURATION_PER_FILE_DIFF * FPS;
 
   const insightSpring = spring({
-    fps, 
-    frame,
-    config: { stiffness: 100, damping: 20 },
-    durationInFrames: fps * 1, 
+    fps,
+    frame: frame - fps * 0.2, // Slight delay
+    config: { stiffness: 100, damping: 20, mass: 1 },
+    durationInFrames: fps * 1,
   });
 
   const insightsOpacity = insightSpring;
@@ -33,7 +33,7 @@ export const CodeDiffScene: React.FC<CodeDiffSceneProps> = ({ files, diffContent
       <AbsoluteFill className="flex flex-col items-center justify-start p-2 md:p-4">
         {codeInsights && (
            <div
-            className="w-full max-w-3xl mb-3 p-3 rounded-lg bg-primary/10 backdrop-blur-sm border border-primary/20 text-primary-foreground glassmorphism shadow-md"
+            className="w-full max-w-3xl mb-3 p-3 rounded-lg bg-primary/10 backdrop-blur-sm border border-primary/20 text-card-foreground glassmorphism shadow-md"
             style={{
               opacity: insightsOpacity,
               transform: `translateY(${insightsY}px)`
@@ -43,7 +43,7 @@ export const CodeDiffScene: React.FC<CodeDiffSceneProps> = ({ files, diffContent
               <Lightbulb className="w-5 h-5 text-primary mr-2" />
               <h3 className="font-headline text-lg text-primary font-semibold">AI Code Insights:</h3>
             </div>
-            <p className="text-xs sm:text-sm font-body whitespace-pre-wrap leading-relaxed max-h-28 overflow-y-auto">
+            <p className="text-xs sm:text-sm font-body whitespace-pre-wrap leading-relaxed max-h-28 overflow-y-auto custom-scrollbar">
               {codeInsights}
             </p>
           </div>

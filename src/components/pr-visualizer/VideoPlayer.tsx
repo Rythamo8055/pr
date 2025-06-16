@@ -1,19 +1,19 @@
 
-"use client"; // Ensure this is a client component
+"use client"; 
 
 import React, { useRef, useState, useEffect } from 'react';
-import type { PlayerRef } from '@remotion/player'; // Keep type import
+import type { PlayerRef } from '@remotion/player'; 
 import type { PRData } from '@/lib/github-types';
 import { MyComposition } from '@/remotion';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { calculateVideoDuration } from '@/remotion/config';
 import { Button } from '@/components/ui/button';
-import { Download, Terminal, Loader2 } from 'lucide-react';
+import { Download, Terminal, Loader2, ImageIcon } from 'lucide-react'; 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useToast } from "@/hooks/use-toast";
 import dynamic from 'next/dynamic';
 
-// Dynamically import the Player component
+
 const Player = dynamic(() => import('@remotion/player').then((mod) => mod.Player), {
   ssr: false,
   loading: () => (
@@ -54,10 +54,9 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ prData, compositionId 
       return;
     }
 
-    // Defensive check for the record method
     if (typeof playerRef.current.record !== 'function') {
       const currentRefValue = playerRef.current;
-      const refKeys = Object.keys(currentRefValue);
+      const refKeys = Object.keys(currentRefValue || {});
       console.error(
         `playerRef.current.record is not a function. PlayerRef current value is:`, 
         currentRefValue,
@@ -76,14 +75,11 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ prData, compositionId 
     setDownloadError(null);
     toast({
       title: "Recording Started",
-      description: "The video is being recorded in the background. This may take a few moments...",
+      description: "The video is being recorded. This may take a few moments...",
     });
 
     try {
-      const blob = await playerRef.current.record({
-        // You can specify codec options here if needed, default is often 'vp9' for WebM
-        // quality: 0.8, // Example: adjust quality
-      });
+      const blob = await playerRef.current.record();
       
       if (blob) {
         const url = URL.createObjectURL(blob);
@@ -117,6 +113,14 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ prData, compositionId 
     } finally {
       setIsRecording(false);
     }
+  };
+
+  const handleGenerateSlides = () => {
+    toast({
+      title: "Generate Slides (Conceptual)",
+      description: "This feature is planned for future implementation. It will allow you to download key frames from the video as slides.",
+    });
+    console.log("Generate Slides button clicked. PR Data:", prData);
   };
 
   return (
@@ -173,20 +177,31 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ prData, compositionId 
             <AlertDescription>{downloadError}</AlertDescription>
           </Alert>
         )}
-        <Button
-          onClick={handleDownload}
-          disabled={isRecording || !prData || !isPlayerComponentReady}
-          className="w-full md:w-auto"
-          size="lg"
-        >
-          <Download className="mr-2 h-5 w-5" />
-          {isRecording ? 'Recording Video...' : 'Download Video (.webm)'}
-        </Button>
-         <p className="text-xs text-muted-foreground mt-2 text-center">
-          Note: Recording happens client-side and might take a few moments. The video will be in WebM format.
+        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+            <Button
+              onClick={handleDownload}
+              disabled={isRecording || !prData || !isPlayerComponentReady}
+              className="w-full sm:w-auto"
+              size="lg"
+            >
+              <Download className="mr-2 h-5 w-5" />
+              {isRecording ? 'Recording Video...' : 'Download Video'}
+            </Button>
+            <Button
+              onClick={handleGenerateSlides}
+              disabled={!prData || !isPlayerComponentReady} // Similar disabled logic
+              className="w-full sm:w-auto"
+              variant="outline"
+              size="lg"
+            >
+              <ImageIcon className="mr-2 h-5 w-5" />
+              Generate Slides
+            </Button>
+        </div>
+         <p className="text-xs text-muted-foreground mt-3 text-center">
+          Note: Video recording happens client-side and might take a few moments. Video is in .webm format.
         </p>
       </CardFooter>
     </Card>
   );
 };
-
