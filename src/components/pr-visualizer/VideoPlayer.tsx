@@ -8,7 +8,7 @@ import { MyComposition } from '@/remotion';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { calculateVideoDuration } from '@/remotion/config';
 import { Button } from '@/components/ui/button';
-import { Download, Terminal } from 'lucide-react';
+import { Download, Terminal, Loader2 } from 'lucide-react'; // Added Loader2 for player loading
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useToast } from "@/hooks/use-toast";
 import dynamic from 'next/dynamic';
@@ -16,7 +16,12 @@ import dynamic from 'next/dynamic';
 // Dynamically import the Player component
 const Player = dynamic(() => import('@remotion/player').then((mod) => mod.Player), {
   ssr: false,
-  loading: () => <div className="w-full h-full flex items-center justify-center bg-muted"><p>Loading Player...</p></div>,
+  loading: () => (
+    <div className="w-full h-full flex flex-col items-center justify-center bg-muted text-muted-foreground">
+      <Loader2 className="h-12 w-12 animate-spin mb-4 text-primary" />
+      <p>Loading Video Player...</p>
+    </div>
+  ),
 });
 
 interface VideoPlayerProps {
@@ -29,16 +34,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ prData, compositionId 
   const [isRecording, setIsRecording] = useState(false);
   const [downloadError, setDownloadError] = useState<string | null>(null);
   const { toast } = useToast();
-  const [isPlayerReady, setIsPlayerReady] = useState(false); // Track player readiness
-
-  useEffect(() => {
-    // This effect helps ensure playerRef is likely populated when player is ready
-    // However, the dynamic import itself is the main fix for the method availability
-    if (playerRef.current) {
-        setIsPlayerReady(true);
-    }
-  }, []);
-
+  const [isPlayerComponentReady, setIsPlayerComponentReady] = useState(false); // New state to track player's onReady
 
   if (!prData) {
     return null;
@@ -47,27 +43,17 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ prData, compositionId 
   const { durationInFrames, width, height, fps } = calculateVideoDuration(prData);
 
   const handleDownload = async () => {
-    if (!playerRef.current || !prData) {
-        toast({
-            variant: "destructive",
-            title: "Player Not Ready",
-            description: "The video player is not ready. Please try again in a moment.",
-        });
-        return;
-    }
-    
-    // Defensive check for the record method
-    if (typeof playerRef.current.record !== 'function') {
+    if (!playerRef.current || typeof playerRef.current.record !== 'function') {
         console.error("playerRef.current.record is not a function. PlayerRef:", playerRef.current);
         toast({
             variant: "destructive",
-            title: "Recording Error",
-            description: "The recording function is not available. The player might not have initialized correctly.",
+            title: "Player Not Ready",
+            description: "The video player is not fully initialized. Please wait a moment and try again.",
         });
-        setDownloadError("Recording function not available.");
+        setDownloadError("Player not ready or record function unavailable.");
         return;
     }
-
+    
     setIsRecording(true);
     setDownloadError(null);
     toast({
@@ -135,7 +121,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ prData, compositionId 
             loop={false}
             showVolumeControls={false}
             clickToPlay
-            // onReady={() => setIsPlayerReady(true)} // Another way to check readiness
+            onReady={() => setIsPlayerComponentReady(true)} // Set ready state when player calls onReady
           />
         </div>
       </CardContent>
@@ -149,7 +135,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ prData, compositionId 
         )}
         <Button
           onClick={handleDownload}
-          disabled={isRecording || !prData}
+          disabled={isRecording || !prData || !isPlayerComponentReady} // Disable button until player is ready
           className="w-full md:w-auto"
           size="lg"
         >
