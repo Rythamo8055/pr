@@ -1,6 +1,7 @@
+
 import React from 'react';
 import { AbsoluteFill } from 'remotion';
-import { TransitionSeries, linearTiming } from '@remotion/transitions';
+import { TransitionSeries, springTiming } from '@remotion/transitions'; // Changed to springTiming
 import { fade } from '@remotion/transitions/fade';
 import { slide } from '@remotion/transitions/slide';
 import type { PRData } from '@/lib/github-types';
@@ -14,14 +15,19 @@ import {
   FPS,
   DURATION_TITLE_SCENE, DURATION_STATS_SCENE, 
   DURATION_PER_FILE_DIFF, MAX_FILES_TO_SHOW, DURATION_COMMIT_HISTORY_SCENE, 
-  DURATION_CICD_STATUS_SCENE, DURATION_FINAL_SCENE
+  DURATION_CICD_STATUS_SCENE, DURATION_FINAL_SCENE,
+  DEFAULT_TRANSITION_DURATION_IN_FRAMES // Import new constant
 } from './config';
 
 interface MyCompositionProps {
   prData: PRData;
 }
 
-const defaultTransitionTiming = linearTiming({ durationInFrames: FPS / 2 }); // 0.5 second transition
+// Use springTiming for transitions by default
+const defaultSpringTransition = springTiming({ 
+  durationInFrames: DEFAULT_TRANSITION_DURATION_IN_FRAMES, // Use value from config
+  config: { damping: 200, stiffness: 150, mass: 0.8 } 
+});
 
 export const MyComposition: React.FC<MyCompositionProps> = ({ prData }) => {
   const titleSceneDuration = DURATION_TITLE_SCENE * FPS;
@@ -42,7 +48,7 @@ export const MyComposition: React.FC<MyCompositionProps> = ({ prData }) => {
         </TransitionSeries.Sequence>
 
         <TransitionSeries.Transition
-          timing={defaultTransitionTiming}
+          timing={defaultSpringTransition}
           presentation={slide({direction: 'from-right'})}
         />
         <TransitionSeries.Sequence durationInFrames={statsSceneDuration}>
@@ -52,7 +58,7 @@ export const MyComposition: React.FC<MyCompositionProps> = ({ prData }) => {
         {filesToShowCount > 0 && (
           <>
             <TransitionSeries.Transition
-              timing={defaultTransitionTiming}
+              timing={defaultSpringTransition}
               presentation={fade()}
             />
             <TransitionSeries.Sequence durationInFrames={codeDiffSceneDuration}>
@@ -64,7 +70,7 @@ export const MyComposition: React.FC<MyCompositionProps> = ({ prData }) => {
         {commitHistorySceneDuration > 0 && (
           <>
             <TransitionSeries.Transition
-              timing={defaultTransitionTiming}
+              timing={defaultSpringTransition}
               presentation={slide({direction: 'from-bottom'})}
             />
             <TransitionSeries.Sequence durationInFrames={commitHistorySceneDuration}>
@@ -76,7 +82,7 @@ export const MyComposition: React.FC<MyCompositionProps> = ({ prData }) => {
         {cicdStatusSceneDuration > 0 && (
            <>
             <TransitionSeries.Transition
-              timing={defaultTransitionTiming}
+              timing={defaultSpringTransition}
               presentation={fade()}
             />
             <TransitionSeries.Sequence durationInFrames={cicdStatusSceneDuration}>
@@ -86,7 +92,7 @@ export const MyComposition: React.FC<MyCompositionProps> = ({ prData }) => {
         )}
 
         <TransitionSeries.Transition
-          timing={defaultTransitionTiming}
+          timing={defaultSpringTransition}
           presentation={slide({direction: 'from-top'})}
         />
         <TransitionSeries.Sequence durationInFrames={finalSceneDuration}>

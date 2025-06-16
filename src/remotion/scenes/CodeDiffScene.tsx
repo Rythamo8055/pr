@@ -1,9 +1,11 @@
+
 import React from 'react';
-import { Sequence, useCurrentFrame, interpolate, Easing, AbsoluteFill, OffthreadVideo, staticFile, Img } from 'remotion';
+import { Sequence, useCurrentFrame, interpolate, Easing, AbsoluteFill, spring, useVideoConfig } from 'remotion';
 import type { GitHubFile } from '@/lib/github-types';
 import { SceneContainer } from './SceneContainer';
 import { CodeFileDiff } from './CodeFileDiff';
 import { FPS, DURATION_PER_FILE_DIFF } from '../config';
+import { Lightbulb } from 'lucide-react';
 
 interface CodeDiffSceneProps {
   files: GitHubFile[];
@@ -13,24 +15,41 @@ interface CodeDiffSceneProps {
 
 export const CodeDiffScene: React.FC<CodeDiffSceneProps> = ({ files, diffContent, codeInsights }) => {
   const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
   const durationPerFileInFrames = DURATION_PER_FILE_DIFF * FPS;
+  const totalFilesDuration = files.length * durationPerFileInFrames;
 
-  const insightsOpacity = interpolate(frame, [0, FPS / 2, (files.length * durationPerFileInFrames) - FPS / 2, (files.length * durationPerFileInFrames)], [0, 1, 1, 0], {
-    easing: Easing.inOut(Easing.ease),
+  // Animate AI insight fading in at the beginning of the scene
+  const insightSpring = spring({
+    fps,
+    frame,
+    config: { stiffness: 100, damping: 20 },
+    durationInFrames: fps * 1.5, // Fade in over 1.5 seconds
   });
-  const insightsY = interpolate(frame, [0, FPS / 2], [20, 0], { extrapolateRight: 'clamp' });
+
+  const insightsOpacity = insightSpring;
+  const insightsY = interpolate(insightSpring, [0, 1], [30, 0]);
+  const insightsScale = interpolate(insightSpring, [0,1], [0.95, 1]);
   
   return (
-    <SceneContainer title="Code Changes">
-      <AbsoluteFill className="flex flex-col items-center justify-start p-4">
+    <SceneContainer title="Code Changes & AI Insights">
+      <AbsoluteFill className="flex flex-col items-center justify-start p-2 md:p-4">
         {/* Display AI Code Insights */}
         {codeInsights && (
            <div 
-            className="w-full max-w-3xl mb-4 p-4 rounded-lg bg-primary/10 border border-primary/30 text-primary-foreground glassmorphism"
-            style={{ opacity: insightsOpacity, transform: `translateY(${insightsY}px)` }}
+            className="w-full max-w-3xl mb-3 p-3 rounded-lg bg-primary/5 backdrop-blur-sm border border-primary/20 text-primary-foreground glassmorphism shadow-md"
+            style={{ 
+              opacity: insightsOpacity, 
+              transform: `translateY(${insightsY}px) scale(${insightsScale})` 
+            }}
           >
-            <h3 className="font-headline text-xl text-primary font-semibold mb-2">AI Code Insights:</h3>
-            <p className="text-sm font-body whitespace-pre-wrap">{codeInsights}</p>
+            <div className="flex items-center mb-1">
+              <Lightbulb className="w-5 h-5 text-primary mr-2" />
+              <h3 className="font-headline text-lg text-primary font-semibold">AI Code Insights:</h3>
+            </div>
+            <p className="text-xs sm:text-sm font-body whitespace-pre-wrap leading-relaxed max-h-28 overflow-y-auto">
+              {codeInsights}
+            </p>
           </div>
         )}
 
@@ -45,6 +64,12 @@ export const CodeDiffScene: React.FC<CodeDiffSceneProps> = ({ files, diffContent
               <CodeFileDiff file={file} diffContent={diffContent} />
             </Sequence>
           ))}
+           {files.length === 0 && (
+            <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
+              <Lightbulb className="w-16 h-16 mb-4" />
+              <p className="text-xl">No code changes to display.</p>
+            </div>
+          )}
         </div>
       </AbsoluteFill>
     </SceneContainer>
