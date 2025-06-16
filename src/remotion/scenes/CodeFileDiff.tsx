@@ -1,7 +1,8 @@
+
 import React from 'react';
 import { AbsoluteFill, useCurrentFrame, interpolate, Easing, spring } from 'remotion';
 import type { GitHubFile } from '@/lib/github-types';
-import { DiffMatchPatch } from 'diff-match-patch';
+import { diff_match_patch } from 'diff-match-patch'; // Changed import
 import { FPS } from '../config';
 
 interface CodeFileDiffProps {
@@ -10,14 +11,14 @@ interface CodeFileDiffProps {
 }
 
 function parseDiffForFile(diffContent: string, filename: string): string {
-  const fileDiffRegex = new RegExp(`diff --git a/${filename} b/${filename}\\n(?:index [\\da-f]+\\.\\.[\\da-f]+(?: [\\d]+)?\\n)?(?:--- a/${filename}\\n)?(?:\\+\\+\\+ b/${filename}\\n)?(@@.*?@@(?:\\n[^@].*?)*)`, 's');
+  const fileDiffRegex = new RegExp(`diff --git a/${filename.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')} b/${filename.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\n(?:index [\\da-f]+\\.\\.[\\da-f]+(?: [\\d]+)?\\n)?(?:--- a/${filename.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\n)?(?:\\+\\+\\+ b/${filename.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\n)?(@@.*?@@(?:\\n[^@].*?)*)`, 's');
   const match = diffContent.match(fileDiffRegex);
   return match ? match[1] : `Diff not found for ${filename}`;
 }
 
 export const CodeFileDiff: React.FC<CodeFileDiffProps> = ({ file, diffContent }) => {
   const frame = useCurrentFrame();
-  const dmp = new DiffMatchPatch();
+  const dmp = new diff_match_patch(); // Changed instantiation
 
   // Attempt to parse the specific file's patch from the combined diff or use file.patch
   let filePatch = file.patch || parseDiffForFile(diffContent, file.filename);
