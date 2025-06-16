@@ -8,7 +8,7 @@ import { MyComposition } from '@/remotion';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { calculateVideoDuration } from '@/remotion/config';
 import { Button } from '@/components/ui/button';
-import { Download, Terminal, Loader2 } from 'lucide-react'; // Added Loader2 for player loading
+import { Download, Terminal, Loader2 } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useToast } from "@/hooks/use-toast";
 import dynamic from 'next/dynamic';
@@ -17,7 +17,7 @@ import dynamic from 'next/dynamic';
 const Player = dynamic(() => import('@remotion/player').then((mod) => mod.Player), {
   ssr: false,
   loading: () => (
-    <div className="w-full h-full flex flex-col items-center justify-center bg-muted text-muted-foreground">
+    <div className="w-full h-full flex flex-col items-center justify-center bg-muted text-muted-foreground rounded-md aspect-video">
       <Loader2 className="h-12 w-12 animate-spin mb-4 text-primary" />
       <p>Loading Video Player...</p>
     </div>
@@ -34,7 +34,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ prData, compositionId 
   const [isRecording, setIsRecording] = useState(false);
   const [downloadError, setDownloadError] = useState<string | null>(null);
   const { toast } = useToast();
-  const [isPlayerComponentReady, setIsPlayerComponentReady] = useState(false); // New state to track player's onReady
+  const [isPlayerComponentReady, setIsPlayerComponentReady] = useState(false);
 
   if (!prData) {
     return null;
@@ -43,15 +43,32 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ prData, compositionId 
   const { durationInFrames, width, height, fps } = calculateVideoDuration(prData);
 
   const handleDownload = async () => {
-    if (!playerRef.current || typeof playerRef.current.record !== 'function') {
-        console.error("playerRef.current.record is not a function. PlayerRef:", playerRef.current);
-        toast({
-            variant: "destructive",
-            title: "Player Not Ready",
-            description: "The video player is not fully initialized. Please wait a moment and try again.",
-        });
-        setDownloadError("Player not ready or record function unavailable.");
-        return;
+    if (!playerRef.current) {
+      console.error("Player ref is null. Cannot record.");
+      toast({
+        variant: "destructive",
+        title: "Player Not Ready",
+        description: "The video player reference is not available. Please wait and try again.",
+      });
+      setDownloadError("Player reference is not available.");
+      return;
+    }
+
+    // Defensive check for the record method
+    if (typeof playerRef.current.record !== 'function') {
+      const currentRefValue = playerRef.current;
+      const refKeys = Object.keys(currentRefValue);
+      console.error(
+        `playerRef.current.record is not a function. PlayerRef is an object with keys: [${refKeys.join(', ')}]. Full ref:`, 
+        currentRefValue
+      );
+      toast({
+        variant: "destructive",
+        title: "Recording Error",
+        description: `The player's 'record' function is unavailable (player methods: ${refKeys.join(', ') || 'none'}). The player might still be initializing or there's an issue. Please try again.`,
+      });
+      setDownloadError("Player's record method is unavailable or player is not fully ready.");
+      return;
     }
     
     setIsRecording(true);
@@ -85,7 +102,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ prData, compositionId 
          toast({
           variant: "destructive",
           title: "Recording Error",
-          description: "Recording failed: No data was received.",
+          description: "Recording failed: No data was received from the player.",
         });
       }
     } catch (err: any) {
@@ -121,7 +138,19 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ prData, compositionId 
             loop={false}
             showVolumeControls={false}
             clickToPlay
-            onReady={() => setIsPlayerComponentReady(true)} // Set ready state when player calls onReady
+            onReady={() => {
+              console.log("Remotion Player onReady fired. playerRef.current:", playerRef.current);
+              setIsPlayerComponentReady(true);
+            }}
+            onError={(e) => {
+              console.error("Remotion Player Error:", e);
+              setDownloadError(`Player error: ${e.message}`);
+              toast({
+                variant: "destructive",
+                title: "Player Error",
+                description: "The video player encountered an error.",
+              });
+            }}
           />
         </div>
       </CardContent>
@@ -135,7 +164,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ prData, compositionId 
         )}
         <Button
           onClick={handleDownload}
-          disabled={isRecording || !prData || !isPlayerComponentReady} // Disable button until player is ready
+          disabled={isRecording || !prData || !isPlayerComponentReady}
           className="w-full md:w-auto"
           size="lg"
         >
@@ -149,3 +178,4 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ prData, compositionId 
     </Card>
   );
 };
+
