@@ -9,38 +9,34 @@ import { Lightbulb } from 'lucide-react';
 
 interface CodeDiffSceneProps {
   files: GitHubFile[];
-  diffContent: string; // Combined diff string
+  diffContent: string; 
   codeInsights?: string;
 }
 
 export const CodeDiffScene: React.FC<CodeDiffSceneProps> = ({ files, diffContent, codeInsights }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const durationPerFileInFrames = DURATION_PER_FILE_DIFF * FPS;
-  const totalFilesDuration = files.length * durationPerFileInFrames;
+  const durationPerFileInFrames = DURATION_PER_FILE_DIFF * FPS; 
 
-  // Animate AI insight fading in at the beginning of the scene
   const insightSpring = spring({
-    fps,
+    fps, 
     frame,
     config: { stiffness: 100, damping: 20 },
-    durationInFrames: fps * 1.5, // Fade in over 1.5 seconds
+    durationInFrames: fps * 1, 
   });
 
   const insightsOpacity = insightSpring;
-  const insightsY = interpolate(insightSpring, [0, 1], [30, 0]);
-  const insightsScale = interpolate(insightSpring, [0,1], [0.95, 1]);
-  
+  const insightsY = interpolate(insightSpring, [0, 1], [20, 0]);
+
   return (
     <SceneContainer title="Code Changes & AI Insights">
       <AbsoluteFill className="flex flex-col items-center justify-start p-2 md:p-4">
-        {/* Display AI Code Insights */}
         {codeInsights && (
-           <div 
-            className="w-full max-w-3xl mb-3 p-3 rounded-lg bg-primary/5 backdrop-blur-sm border border-primary/20 text-primary-foreground glassmorphism shadow-md"
-            style={{ 
-              opacity: insightsOpacity, 
-              transform: `translateY(${insightsY}px) scale(${insightsScale})` 
+           <div
+            className="w-full max-w-3xl mb-3 p-3 rounded-lg bg-primary/10 backdrop-blur-sm border border-primary/20 text-primary-foreground glassmorphism shadow-md"
+            style={{
+              opacity: insightsOpacity,
+              transform: `translateY(${insightsY}px)`
             }}
           >
             <div className="flex items-center mb-1">
@@ -53,7 +49,6 @@ export const CodeDiffScene: React.FC<CodeDiffSceneProps> = ({ files, diffContent
           </div>
         )}
 
-        {/* Files Diff */}
         <div className="w-full flex-grow overflow-hidden relative">
           {files.map((file, index) => (
             <Sequence

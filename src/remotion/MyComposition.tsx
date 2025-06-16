@@ -11,12 +11,12 @@ import { CodeDiffScene } from './scenes/CodeDiffScene';
 import { CommitHistoryScene } from './scenes/CommitHistoryScene';
 import { CICDStatusScene } from './scenes/CICDStatusScene';
 import { FinalScene } from './scenes/FinalScene';
-import { 
+import {
   FPS,
-  DURATION_TITLE_SCENE, DURATION_STATS_SCENE, 
-  DURATION_PER_FILE_DIFF, MAX_FILES_TO_SHOW, DURATION_COMMIT_HISTORY_SCENE, 
+  DURATION_TITLE_SCENE, DURATION_STATS_SCENE,
+  DURATION_PER_FILE_DIFF, MAX_FILES_TO_SHOW, DURATION_COMMIT_HISTORY_SCENE,
   DURATION_CICD_STATUS_SCENE, DURATION_FINAL_SCENE,
-  DEFAULT_TRANSITION_DURATION_IN_FRAMES // Import new constant
+  DEFAULT_TRANSITION_DURATION_IN_FRAMES
 } from './config';
 
 interface MyCompositionProps {
@@ -24,18 +24,18 @@ interface MyCompositionProps {
 }
 
 // Use springTiming for transitions by default
-const defaultSpringTransition = springTiming({ 
-  durationInFrames: DEFAULT_TRANSITION_DURATION_IN_FRAMES, // Use value from config
-  config: { damping: 200, stiffness: 150, mass: 0.8 } 
+const defaultSpringTransition = springTiming({
+  durationInFrames: DEFAULT_TRANSITION_DURATION_IN_FRAMES,
+  config: { damping: 200, stiffness: 150, mass: 0.8 }
 });
 
 export const MyComposition: React.FC<MyCompositionProps> = ({ prData }) => {
   const titleSceneDuration = DURATION_TITLE_SCENE * FPS;
   const statsSceneDuration = DURATION_STATS_SCENE * FPS;
-  
+
   const filesToShowCount = Math.min(prData.files.length, MAX_FILES_TO_SHOW);
   const codeDiffSceneDuration = filesToShowCount > 0 ? (filesToShowCount * DURATION_PER_FILE_DIFF * FPS) : 0;
-  
+
   const commitHistorySceneDuration = prData.commits.length > 0 ? (DURATION_COMMIT_HISTORY_SCENE * FPS) : 0;
   const cicdStatusSceneDuration = prData.checkRuns.length > 0 ? (DURATION_CICD_STATUS_SCENE * FPS) : 0;
   const finalSceneDuration = DURATION_FINAL_SCENE * FPS;
@@ -54,7 +54,7 @@ export const MyComposition: React.FC<MyCompositionProps> = ({ prData }) => {
         <TransitionSeries.Sequence durationInFrames={statsSceneDuration}>
           <StatsScene prDetails={prData.prDetails} />
         </TransitionSeries.Sequence>
-      
+
         {filesToShowCount > 0 && (
           <>
             <TransitionSeries.Transition
@@ -78,7 +78,7 @@ export const MyComposition: React.FC<MyCompositionProps> = ({ prData }) => {
             </TransitionSeries.Sequence>
           </>
         )}
-      
+
         {cicdStatusSceneDuration > 0 && (
            <>
             <TransitionSeries.Transition

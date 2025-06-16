@@ -3,7 +3,7 @@ import React from 'react';
 import { Img, useCurrentFrame, interpolate, spring, useVideoConfig } from 'remotion';
 import type { GitHubPullRequest } from '@/lib/github-types';
 import { SceneContainer } from './SceneContainer';
-import { WIDTH, HEIGHT, FPS } from '../config'; // Added FPS
+import { WIDTH, HEIGHT } from '../config';
 
 interface TitleSceneProps {
   prDetails: GitHubPullRequest;
@@ -11,46 +11,40 @@ interface TitleSceneProps {
 
 export const TitleScene: React.FC<TitleSceneProps> = ({ prDetails }) => {
   const frame = useCurrentFrame();
-  const { fps } = useVideoConfig(); // Use useVideoConfig for fps
-
-  // Animate title sliding in from the top
-  const titleY = interpolate(frame, [0, fps * 0.7], [-100, 0], { // Adjusted timing
-    extrapolateRight: 'clamp',
-  });
-  const titleOpacity = interpolate(frame, [0, fps * 0.7], [0, 1], {extrapolateRight: 'clamp'});
-
-  // Animate author block with a spring, starting slightly later
-  const authorScale = spring({
-    fps,
-    frame: frame - fps * 0.5, // Stagger start (0.5 seconds)
-    config: { damping: 200, stiffness: 150 },
-  });
-  const authorOpacity = authorScale; // Tie opacity to scale for a fade-in effect
-
-  // Animate branch names one by one
-  const branchBaseOpacity = spring({ fps, frame: frame - fps * 0.8 }); // Stagger start (0.8 seconds)
-  const branchHeadOpacity = spring({ fps, frame: frame - fps * 1.0 }); // Stagger start (1 second)
-  const arrowOpacity = spring({fps, frame: frame - fps * 0.9});
-
+  const { fps } = useVideoConfig(); 
 
   const titleSpring = spring({
     frame,
     fps,
     config: { stiffness: 100, damping: 15, mass: 1.2 },
-    delay: fps * 0.2,
+    delay: fps * 0.2, 
   });
 
+  const titleY = interpolate(titleSpring, [0, 1], [-50, 0]);
+  const titleOpacity = titleSpring;
 
-  const detailsSpring = spring({
+  const authorSpring = spring({
     frame,
     fps,
-    config: { stiffness: 90, damping: 18 },
-    delay: fps * 0.8,
+    config: { stiffness: 80, damping: 18 },
+    delay: fps * 0.5, 
   });
+
+  const authorScale = interpolate(authorSpring, [0, 1], [0.8, 1]);
+  const authorOpacity = authorSpring;
+
+  const branchDetailsSpring = spring({
+    frame,
+    fps,
+    config: { stiffness: 70, damping: 20 },
+    delay: fps * 0.8, 
+  });
+  const branchOpacity = branchDetailsSpring;
+  const branchY = interpolate(branchDetailsSpring, [0,1], [20,0]);
 
 
   return (
-    <SceneContainer bgImage={`https://placehold.co/${WIDTH}x${HEIGHT}.png`} data-ai-hint="abstract tech background">
+    <SceneContainer bgImage={`https://placehold.co/${WIDTH}x${HEIGHT}.png`} data-ai-hint="abstract tech lines">
       <div className="text-center flex flex-col items-center justify-center h-full w-full">
         <h1
           className="font-headline text-5xl md:text-6xl lg:text-7xl font-bold text-primary-foreground mb-6 text-shadow-md leading-tight max-w-4xl"
@@ -63,11 +57,11 @@ export const TitleScene: React.FC<TitleSceneProps> = ({ prDetails }) => {
         </h1>
 
         {prDetails.user && (
-          <div 
-            className="flex items-center mb-4" 
-            style={{ 
+          <div
+            className="flex items-center mb-4"
+            style={{
               transform: `scale(${authorScale})`,
-              opacity: authorOpacity
+              opacity: authorOpacity,
             }}
           >
             <Img
@@ -83,20 +77,20 @@ export const TitleScene: React.FC<TitleSceneProps> = ({ prDetails }) => {
             </p>
           </div>
         )}
-        
-        <div 
+
+        <div
             className="text-xl md:text-2xl text-muted-foreground flex items-center flex-wrap justify-center"
+            style={{opacity: branchOpacity, transform: `translateY(${branchY}px)`}}
         >
-            <span style={{opacity: branchHeadOpacity}} className="font-semibold text-accent/90 p-1 bg-accent/10 rounded mx-1">
+            <span className="font-semibold text-accent/90 p-1 bg-accent/10 rounded mx-1">
                 {prDetails.head.ref}
             </span>
-            <span style={{opacity: arrowOpacity}} className="mx-1 text-xl">{'←'}</span>
-            <span style={{opacity: branchBaseOpacity}} className="font-semibold text-primary/90 p-1 bg-primary/10 rounded mx-1">
+            <span className="mx-1 text-xl">{'->'}</span>
+            <span className="font-semibold text-primary/90 p-1 bg-primary/10 rounded mx-1">
                 {prDetails.base.ref}
             </span>
         </div>
-         <p className="text-lg md:text-xl text-muted-foreground mt-3" style={{opacity: branchBaseOpacity}}>PR #{prDetails.number}</p>
-
+        <p className="text-lg md:text-xl text-muted-foreground mt-3" style={{opacity: branchOpacity, transform: `translateY(${branchY}px)`}}>PR #{prDetails.number}</p>
       </div>
     </SceneContainer>
   );
