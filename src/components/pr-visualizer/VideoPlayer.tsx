@@ -16,7 +16,7 @@ const Player = dynamic(() => import('@remotion/player').then((mod) => mod.Player
   loading: () => (
     <div className="w-full h-full flex flex-col items-center justify-center bg-muted text-muted-foreground rounded-md aspect-video">
       <Loader2 className="h-12 w-12 animate-spin mb-4 text-primary" />
-      <p>Loading Video Player...</p>
+      <p>Loading Video Player Component...</p>
     </div>
   ),
 });
@@ -35,7 +35,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ prData, compositionId 
   useEffect(() => {
     setPlayerError(null);
     setPlaybackProgress(0);
-    setIsPlayerComponentReady(false);
+    setIsPlayerComponentReady(false); // Reset on new PR data
   }, [prData]);
 
   if (!prData) {
@@ -52,7 +52,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ prData, compositionId 
       setPlaybackProgress(0);
     }
   };
-
+  
   return (
     <Card className="w-full max-w-4xl mt-8 glassmorphism">
       <CardContent className="p-4 md:p-6">
@@ -90,7 +90,11 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ prData, compositionId 
            <p className="text-destructive text-sm text-center">Player Error: {playerError}</p>
         )}
         {!playerError && !isPlayerComponentReady && prData && (
-          <p className="text-muted-foreground text-sm">Player is loading...</p> 
+            <div className="w-full max-w-xl mt-1 flex flex-col items-center">
+                <p className="text-sm text-muted-foreground mb-1">Remotion Player loading... (66%)</p>
+                <Progress value={66} className="w-full h-2" />
+                <p className="text-xs text-muted-foreground mt-1">This indicates activity, not exact completion.</p>
+            </div>
         )}
         {!playerError && isPlayerComponentReady && prData && (
           <div className="w-full max-w-xl mt-1">

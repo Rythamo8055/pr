@@ -13,7 +13,7 @@ import type { HistoryEntry } from '@/lib/history-types';
 import { COMPOSITION_ID } from '@/remotion/config';
 import { useToast } from "@/hooks/use-toast";
 import Image from 'next/image';
-import { Progress } from "@/components/ui/progress"; // Import Progress component
+import { Progress } from "@/components/ui/progress";
 
 const MAX_HISTORY_ITEMS = 10;
 
@@ -25,7 +25,7 @@ export default function HomePage() {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Preload sounds or other assets if necessary
+    // Preload assets if necessary
   }, []);
 
   const addToHistory = (prUrl: string, data: PRData) => {
@@ -34,7 +34,7 @@ export default function HomePage() {
         const newEntry: HistoryEntry = {
           id: String(data.prDetails.number),
           title: data.prDetails.title,
-          prUrl: prUrl, // Use the submitted URL
+          prUrl: prUrl,
           timestamp: Date.now(),
           repoName: data.prDetails.base.repo?.full_name || prUrl.split('/').slice(3, 5).join('/'),
         };
@@ -82,8 +82,9 @@ export default function HomePage() {
       {isLoading && (
         <div className="mt-8 flex flex-col items-center glassmorphism p-8 rounded-xl w-full max-w-lg">
           <LoadingSpinner size="lg" />
-          <p className="mt-4 text-lg text-primary-foreground">Fetching PR data & preparing video...</p>
-          <Progress value={50} className="w-full mt-3 h-2 animate-pulse" /> {/* Indeterminate progress bar */}
+          <p className="mt-4 text-lg text-primary-foreground">Fetching PR data & preparing... (33%)</p>
+          <Progress value={33} className="w-full mt-3 h-2" />
+          <p className="text-xs text-muted-foreground mt-1">This indicates activity, not exact completion.</p>
         </div>
       )}
 
