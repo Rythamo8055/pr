@@ -2,7 +2,7 @@
 "use client"; // Required for useEffect to run client-side for theme application
 
 import React, { useEffect } from 'react'; // Import React and useEffect
-import type {Metadata} from 'next';
+// import type {Metadata} from 'next'; // Metadata is commented out, can be removed if not planned
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 import { BottomNavBar } from '@/components/layout/BottomNavBar';
@@ -32,20 +32,20 @@ export default function RootLayout({
         root.classList.add('dark');
       } else {
         // Defaults to light if no theme stored and system is not dark, or if 'light' is stored
-        root.classList.add('light'); 
+        root.classList.add('light');
       }
     };
 
     applyInitialTheme();
-    
+
     // Optional: Listen for system theme changes if you want to support 'system' preference reactively
     // This part is more complex if you want the UI to update without a reload when system theme changes
     // For now, 'system' preference is applied on load, and manual toggle overrides it.
   }, []);
 
   return (
-    <html lang="en" suppressHydrationWarning> {/* suppressHydrationWarning for theme class changes */}
-      <head>
+    <html lang="en" suppressHydrationWarning>{/* suppressHydrationWarning for theme class changes */}
+<head>
         <title>PR Visualizer</title> {/* Static title, or move to page.tsx for dynamic */}
         <meta name="description" content="Visualize your GitHub Pull Requests dynamically." />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -53,8 +53,7 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet" />
         <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;700&display=swap" rel="stylesheet" />
         <link href="https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@400;700&display=swap" rel="stylesheet" />
-      </head>
-      <body className="font-body antialiased min-h-screen flex flex-col pb-24">
+      </head><body className="font-body antialiased min-h-screen flex flex-col pb-24">
         {children}
         <BottomNavBar />
         <Toaster />
