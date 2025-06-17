@@ -35,6 +35,54 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ prData, compositionId 
   const [downloadError, setDownloadError] = useState<string | null>(null);
   const { toast } = useToast();
   const [isPlayerComponentReady, setIsPlayerComponentReady] = useState(false);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const successSoundBufferRef = useRef<AudioBuffer | null>(null);
+
+  useEffect(() => {
+    // Initialize AudioContext and load sound effect on client-side
+    audioContextRef.current = new window.AudioContext();
+    const loadSuccessSound = async () => {
+      try {
+        // IMPORTANT: Place your sound file at public/sounds/notification.mp3
+        const response = await fetch('/sounds/notification.mp3');
+        if (!response.ok) {
+          console.warn('Failed to load notification sound, response not OK:', response.statusText);
+          return;
+        }
+        const arrayBuffer = await response.arrayBuffer();
+        if (audioContextRef.current) {
+          successSoundBufferRef.current = await audioContextRef.current.decodeAudioData(arrayBuffer);
+        }
+      } catch (error) {
+        console.warn("Failed to load or decode success sound:", error);
+      }
+    };
+    loadSuccessSound();
+
+    return () => {
+      audioContextRef.current?.close();
+    };
+  }, []);
+
+  const playSuccessSound = () => {
+    if (audioContextRef.current && successSoundBufferRef.current && audioContextRef.current.state === 'running') {
+      const source = audioContextRef.current.createBufferSource();
+      source.buffer = successSoundBufferRef.current;
+      source.connect(audioContextRef.current.destination);
+      source.start();
+    } else if (audioContextRef.current && audioContextRef.current.state !== 'running') {
+        // Attempt to resume audio context if suspended (e.g., by browser policy)
+        audioContextRef.current.resume().then(() => {
+            if (successSoundBufferRef.current) {
+                const source = audioContextRef.current!.createBufferSource();
+                source.buffer = successSoundBufferRef.current;
+                source.connect(audioContextRef.current!.destination);
+                source.start();
+            }
+        }).catch(e => console.warn("Could not resume audio context for sound:", e));
+    }
+  };
+
 
   if (!prData) {
     return null;
@@ -73,11 +121,8 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ prData, compositionId 
     
     setIsRecording(true);
     setDownloadError(null);
-    toast({
-      title: "Recording Started",
-      description: "The video is being recorded. This may take a few moments...",
-    });
-
+    // Toast for recording started is removed to avoid too many toasts, relying on button state
+    
     try {
       const blob = await playerRef.current.record();
       
@@ -90,9 +135,10 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ prData, compositionId 
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
+        playSuccessSound();
         toast({
-          title: "Recording Complete",
-          description: "Your video download has started.",
+          title: "Download Started",
+          description: "Your video recording has completed and download has started.",
         });
       } else {
         setDownloadError("Recording failed: No data was received from the player.");
@@ -184,8 +230,17 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ prData, compositionId 
               className="w-full sm:w-auto"
               size="lg"
             >
-              <Download className="mr-2 h-5 w-5" />
-              {isRecording ? 'Recording Video...' : 'Download Video'}
+              {isRecording ? (
+                <>
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  Recording...
+                </>
+              ) : (
+                <>
+                  <Download className="mr-2 h-5 w-5" />
+                  Download Video
+                </>
+              )}
             </Button>
             <Button
               onClick={handleGenerateSlides}
@@ -200,8 +255,11 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ prData, compositionId 
         </div>
          <p className="text-xs text-muted-foreground mt-3 text-center">
           Note: Video recording happens client-side and might take a few moments. Video is in .webm format.
+          <br />
+          For best results, keep this browser tab active during recording.
         </p>
       </CardFooter>
     </Card>
   );
 };
+
