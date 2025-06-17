@@ -1,3 +1,4 @@
+
 // @ts-nocheck
 // Disabling TypeScript checks for this file due to Octokit and GitHub API types complexity.
 // Production applications should have proper type checking.
@@ -6,6 +7,7 @@
 import { Octokit } from "octokit";
 import type { PRData, GitHubPullRequest, GitHubCommit, GitHubFile, GitHubCheckRun } from "@/lib/github-types";
 import { extractCodeInsights } from "@/ai/flows/extract-code-insights";
+import { cache } from 'react'; // Added React cache
 
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 
@@ -33,7 +35,7 @@ function parseGitHubPRUrl(url: string): ParsedPRUrl | null {
   return null;
 }
 
-export async function getPRData(prUrl: string): Promise<PRData | { error: string }> {
+export const getPRData = cache(async (prUrl: string): Promise<PRData | { error: string }> => {
   const parsedUrl = parseGitHubPRUrl(prUrl);
   if (!parsedUrl) {
     return { error: "Invalid GitHub PR URL." };
@@ -126,4 +128,5 @@ export async function getPRData(prUrl: string): Promise<PRData | { error: string
     }
     return { error: `Failed to fetch PR data: ${error.message}` };
   }
-}
+});
+

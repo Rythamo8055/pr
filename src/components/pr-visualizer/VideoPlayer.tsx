@@ -40,24 +40,26 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ prData, compositionId 
 
   useEffect(() => {
     // Initialize AudioContext and load sound effect on client-side
-    audioContextRef.current = new window.AudioContext();
-    const loadSuccessSound = async () => {
-      try {
-        // IMPORTANT: Place your sound file at public/sounds/notification.mp3
-        const response = await fetch('/sounds/notification.mp3');
-        if (!response.ok) {
-          console.warn('Failed to load notification sound, response not OK:', response.statusText);
-          return;
+    if (typeof window !== 'undefined') {
+      audioContextRef.current = new window.AudioContext();
+      const loadSuccessSound = async () => {
+        try {
+          // IMPORTANT: Place your sound file at public/sounds/notification.mp3
+          const response = await fetch('/sounds/notification.mp3');
+          if (!response.ok) {
+            console.warn('Failed to load notification sound, response not OK:', response.statusText);
+            return;
+          }
+          const arrayBuffer = await response.arrayBuffer();
+          if (audioContextRef.current) {
+            successSoundBufferRef.current = await audioContextRef.current.decodeAudioData(arrayBuffer);
+          }
+        } catch (error) {
+          console.warn("Failed to load or decode success sound:", error);
         }
-        const arrayBuffer = await response.arrayBuffer();
-        if (audioContextRef.current) {
-          successSoundBufferRef.current = await audioContextRef.current.decodeAudioData(arrayBuffer);
-        }
-      } catch (error) {
-        console.warn("Failed to load or decode success sound:", error);
-      }
-    };
-    loadSuccessSound();
+      };
+      loadSuccessSound();
+    }
 
     return () => {
       audioContextRef.current?.close();
@@ -73,10 +75,10 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ prData, compositionId 
     } else if (audioContextRef.current && audioContextRef.current.state !== 'running') {
         // Attempt to resume audio context if suspended (e.g., by browser policy)
         audioContextRef.current.resume().then(() => {
-            if (successSoundBufferRef.current) {
-                const source = audioContextRef.current!.createBufferSource();
+            if (successSoundBufferRef.current && audioContextRef.current) { // Check audioContextRef.current again
+                const source = audioContextRef.current.createBufferSource();
                 source.buffer = successSoundBufferRef.current;
-                source.connect(audioContextRef.current!.destination);
+                source.connect(audioContextRef.current.destination);
                 source.start();
             }
         }).catch(e => console.warn("Could not resume audio context for sound:", e));
@@ -124,7 +126,11 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ prData, compositionId 
     console.warn("PR Visualizer: Starting client-side video recording. Performance will depend on your computer's resources. This might be slower than local development previews.");
     
     try {
-      const blob = await playerRef.current.record();
+      const blob = await playerRef.current.record({
+        quality: 0.8, // Reduce quality slightly for faster processing
+        codec: 'vp8',   // Use VP8 codec which is generally faster than VP9
+        // bitrate: '2M'  // Control bitrate - commented out for now, quality + codec are often enough
+      });
       
       if (blob) {
         const url = URL.createObjectURL(blob);
@@ -244,7 +250,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ prData, compositionId 
             </Button>
             <Button
               onClick={handleGenerateSlides}
-              disabled={!prData || !isPlayerComponentReady} // Similar disabled logic
+              disabled={!prData || !isPlayerComponentReady} 
               className="w-full sm:w-auto"
               variant="outline"
               size="lg"
