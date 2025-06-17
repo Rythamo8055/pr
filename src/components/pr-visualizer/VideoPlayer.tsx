@@ -7,12 +7,11 @@ import type { PRData } from '@/lib/github-types';
 import { MyComposition } from '@/remotion';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { calculateVideoDuration } from '@/remotion/config';
-import { Button } from '@/components/ui/button';
-import { Download, Terminal, Loader2, ImageIcon } from 'lucide-react'; 
+import { LoadingSpinner } from '@/components/ui/loading-spinner'; // Changed from Button to LoadingSpinner
+import { Terminal, Loader2, CheckCircle } from 'lucide-react'; 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useToast } from "@/hooks/use-toast";
 import dynamic from 'next/dynamic';
-
 
 const Player = dynamic(() => import('@remotion/player').then((mod) => mod.Player), {
   ssr: false,
@@ -32,19 +31,20 @@ interface VideoPlayerProps {
 export const VideoPlayer: React.FC<VideoPlayerProps> = ({ prData, compositionId }) => {
   const playerRef = useRef<PlayerRef>(null);
   const [isRecording, setIsRecording] = useState(false);
-  const [downloadError, setDownloadError] = useState<string | null>(null);
-  const { toast } = useToast();
+  const [recordingError, setRecordingError] = useState<string | null>(null);
+  const [progressMessage, setProgressMessage] = useState<string>("");
   const [isPlayerComponentReady, setIsPlayerComponentReady] = useState(false);
+  const [hasRecordingStarted, setHasRecordingStarted] = useState(false);
+  const { toast } = useToast();
+  
   const audioContextRef = useRef<AudioContext | null>(null);
   const successSoundBufferRef = useRef<AudioBuffer | null>(null);
 
   useEffect(() => {
-    // Initialize AudioContext and load sound effect on client-side
     if (typeof window !== 'undefined') {
       audioContextRef.current = new window.AudioContext();
       const loadSuccessSound = async () => {
         try {
-          // IMPORTANT: Place your sound file at public/sounds/notification.mp3
           const response = await fetch('/sounds/notification.mp3');
           if (!response.ok) {
             console.warn('Failed to load notification sound, response not OK:', response.statusText);
@@ -60,7 +60,6 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ prData, compositionId 
       };
       loadSuccessSound();
     }
-
     return () => {
       audioContextRef.current?.close();
     };
@@ -73,9 +72,8 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ prData, compositionId 
       source.connect(audioContextRef.current.destination);
       source.start();
     } else if (audioContextRef.current && audioContextRef.current.state !== 'running') {
-        // Attempt to resume audio context if suspended (e.g., by browser policy)
         audioContextRef.current.resume().then(() => {
-            if (successSoundBufferRef.current && audioContextRef.current) { // Check audioContextRef.current again
+            if (successSoundBufferRef.current && audioContextRef.current) {
                 const source = audioContextRef.current.createBufferSource();
                 source.buffer = successSoundBufferRef.current;
                 source.connect(audioContextRef.current.destination);
@@ -85,54 +83,35 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ prData, compositionId 
     }
   };
 
-
-  if (!prData) {
-    return null;
-  }
-
-  const { durationInFrames, width, height, fps } = calculateVideoDuration(prData);
-
-  const handleDownload = async () => {
-    if (!playerRef.current) {
-      console.error("Player ref is null when handleDownload is called. Cannot record.");
-      toast({
-        variant: "destructive",
-        title: "Player Not Ready",
-        description: "The video player reference is not available. Please wait and try again.",
-      });
-      setDownloadError("Player reference is not available.");
+  const startClientSideRenderAndDownload = async () => {
+    if (!playerRef.current || !prData) {
+      setRecordingError("Player or PR data not ready.");
+      setProgressMessage("Error: Player or PR data not available.");
       return;
     }
-
     if (typeof playerRef.current.record !== 'function') {
-      const currentRefValue = playerRef.current;
-      const refKeys = Object.keys(currentRefValue || {});
-      console.error(
-        `playerRef.current.record is not a function. PlayerRef current value is:`, 
-        currentRefValue,
-        `Keys on playerRef.current: [${refKeys.join(', ')}]`
-      );
-      toast({
-        variant: "destructive",
-        title: "Recording Error",
-        description: `The player's 'record' function is unavailable (player methods: ${refKeys.join(', ') || 'none'}). The player might still be initializing or there's an issue. Please try again.`,
-      });
-      setDownloadError("Player's record method is unavailable or player is not fully ready.");
+      setRecordingError("Player's record method is unavailable. The player might still be initializing.");
+      setProgressMessage("Error: Player recording function not ready.");
       return;
     }
     
+    setHasRecordingStarted(true);
     setIsRecording(true);
-    setDownloadError(null);
-    console.warn("PR Visualizer: Starting client-side video recording. Performance will depend on your computer's resources. This might be slower than local development previews.");
+    setRecordingError(null);
+    setProgressMessage("Initializing video generation...");
     
+    console.warn("PR Visualizer: Starting client-side video recording. Performance will depend on your computer's resources. This might be slower than local development previews. Please keep this tab active.");
+
     try {
+      setProgressMessage("Recording video... This may take several minutes. Please keep this tab active for best results.");
       const blob = await playerRef.current.record({
-        quality: 0.8, // Reduce quality slightly for faster processing
-        codec: 'vp8',   // Use VP8 codec which is generally faster than VP9
-        // bitrate: '2M'  // Control bitrate - commented out for now, quality + codec are often enough
+        quality: 0.8,
+        codec: 'vp8',
+        // bitrate: '2M' // Bitrate can be adjusted if needed
       });
       
       if (blob) {
+        setProgressMessage("Finalizing video... Download will start shortly.");
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -141,13 +120,16 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ prData, compositionId 
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
+        
         playSuccessSound();
         toast({
           title: "Download Started",
           description: "Your video recording has completed and download has started.",
         });
+        setProgressMessage("Video generated! Download has started.");
       } else {
-        setDownloadError("Recording failed: No data was received from the player.");
+        setRecordingError("Recording failed: No data was received from the player.");
+        setProgressMessage("Error: Recording failed to produce video data.");
          toast({
           variant: "destructive",
           title: "Recording Error",
@@ -156,7 +138,8 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ prData, compositionId 
       }
     } catch (err: any) {
       console.error("Error recording video:", err);
-      setDownloadError(`Error recording video: ${err.message || 'Unknown error'}`);
+      setRecordingError(`Error recording video: ${err.message || 'Unknown error'}`);
+      setProgressMessage(`Error: ${err.message || 'Unknown video recording error'}`);
       toast({
         variant: "destructive",
         title: "Recording Error",
@@ -167,13 +150,26 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ prData, compositionId 
     }
   };
 
-  const handleGenerateSlides = () => {
-    toast({
-      title: "Generate Slides (Conceptual)",
-      description: "This feature is planned for future implementation. It will allow you to download key frames from the video as slides.",
-    });
-    console.log("Generate Slides button clicked. PR Data:", prData);
-  };
+  useEffect(() => {
+    if (prData && isPlayerComponentReady && !isRecording && !hasRecordingStarted && !recordingError) {
+      startClientSideRenderAndDownload();
+    }
+  }, [prData, isPlayerComponentReady, isRecording, hasRecordingStarted, recordingError]);
+  
+  useEffect(() => {
+    // Reset recording state if prData changes (for new PR visualization)
+    setHasRecordingStarted(false);
+    setIsRecording(false);
+    setRecordingError(null);
+    setProgressMessage("");
+  }, [prData]);
+
+
+  if (!prData) {
+    return null; 
+  }
+
+  const { durationInFrames, width, height, fps } = calculateVideoDuration(prData);
 
   return (
     <Card className="w-full max-w-4xl mt-8 glassmorphism">
@@ -196,22 +192,12 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ prData, compositionId 
             showVolumeControls={false}
             clickToPlay
             onReady={() => {
-              console.log("Remotion Player onReady fired. Current playerRef.current:", playerRef.current);
-              const currentRefValue = playerRef.current;
-              if (currentRefValue) {
-                const refKeys = Object.keys(currentRefValue);
-                console.log(`Keys on playerRef.current in onReady: [${refKeys.join(', ')}]`);
-                if (typeof currentRefValue.record === 'function') {
-                  console.log("playerRef.current.record IS a function in onReady.");
-                } else {
-                  console.warn("playerRef.current.record is NOT a function in onReady.");
-                }
-              }
               setIsPlayerComponentReady(true);
             }}
             onError={(e) => {
               console.error("Remotion Player Error:", e);
-              setDownloadError(`Player error: ${e.message}`);
+              setRecordingError(`Player error: ${e.message}`);
+              setProgressMessage(`Player error: ${e.message}`);
               toast({
                 variant: "destructive",
                 title: "Player Error",
@@ -221,51 +207,31 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ prData, compositionId 
           />
         </div>
       </CardContent>
-      <CardFooter className="flex flex-col items-center p-4 md:p-6 pt-0 md:pt-0">
-        {downloadError && (
-          <Alert variant="destructive" className="mb-4 w-full">
+      <CardFooter className="flex flex-col items-center justify-center p-4 md:p-6 pt-0 md:pt-0 min-h-[80px]">
+        {isRecording && !recordingError && (
+          <div className="flex flex-col items-center text-center">
+            <LoadingSpinner size="md" className="mb-2" />
+            <p className="text-primary animate-pulse">{progressMessage}</p>
+            <p className="text-xs text-muted-foreground mt-1">Please keep this browser tab active for best results.</p>
+          </div>
+        )}
+        {!isRecording && recordingError && (
+          <Alert variant="destructive" className="w-full">
             <Terminal className="h-4 w-4" />
-            <AlertTitle>Download Error</AlertTitle>
-            <AlertDescription>{downloadError}</AlertDescription>
+            <AlertTitle>Generation Error</AlertTitle>
+            <AlertDescription>{recordingError} <br /> {progressMessage}</AlertDescription>
           </Alert>
         )}
-        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-            <Button
-              onClick={handleDownload}
-              disabled={isRecording || !prData || !isPlayerComponentReady}
-              className="w-full sm:w-auto"
-              size="lg"
-            >
-              {isRecording ? (
-                <>
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  Recording...
-                </>
-              ) : (
-                <>
-                  <Download className="mr-2 h-5 w-5" />
-                  Download Video
-                </>
-              )}
-            </Button>
-            <Button
-              onClick={handleGenerateSlides}
-              disabled={!prData || !isPlayerComponentReady} 
-              className="w-full sm:w-auto"
-              variant="outline"
-              size="lg"
-            >
-              <ImageIcon className="mr-2 h-5 w-5" />
-              Generate Slides
-            </Button>
-        </div>
-         <p className="text-xs text-muted-foreground mt-3 text-center">
-          Note: Video recording happens client-side and might take a few moments. Video is in .webm format.
-          <br />
-          For best results, keep this browser tab active during recording.
-        </p>
+        {!isRecording && !recordingError && progressMessage && (
+          <div className="flex items-center text-center">
+            <CheckCircle className="w-6 h-6 text-accent mr-2" />
+            <p className="text-accent">{progressMessage}</p>
+          </div>
+        )}
+         {!isRecording && !recordingError && !progressMessage && prData && (
+            <p className="text-muted-foreground">Video player ready. Preparing generation...</p>
+        )}
       </CardFooter>
     </Card>
   );
 };
-
