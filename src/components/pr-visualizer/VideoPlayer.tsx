@@ -121,7 +121,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ prData, compositionId 
     
     setIsRecording(true);
     setDownloadError(null);
-    // Toast for recording started is removed to avoid too many toasts, relying on button state
+    console.warn("PR Visualizer: Starting client-side video recording. Performance will depend on your computer's resources. This might be slower than local development previews.");
     
     try {
       const blob = await playerRef.current.record();
