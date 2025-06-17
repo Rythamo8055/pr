@@ -26,21 +26,21 @@ export function BottomNavBar() {
         {navItems.map((item) => {
           const isActive = pathname === item.href;
           return (
-            <Link key={item.href} href={item.href} passHref legacyBehavior>
-              <a
-                className={cn(
-                  'flex flex-col items-center justify-center rounded-full p-2.5 sm:p-3 transition-all duration-300 ease-in-out',
-                  'w-16 h-14 sm:w-20 sm:h-16', // Slightly adjusted sizes for better touch targets
-                  isActive
-                    ? 'bg-primary text-primary-foreground shadow-lg'
-                    : 'text-muted-foreground hover:text-primary hover:bg-primary/10 active:bg-primary/20',
-                )}
-                aria-label={item.label}
-              >
-                <item.icon className={cn('w-5 h-5 sm:w-6 sm:h-6', isActive ? 'text-primary-foreground': '')} />
-                {isActive && <span className="text-xs mt-0.5 sm:mt-1">{item.label}</span>}
-                {!isActive && <span className="text-xs mt-0.5 sm:mt-1 text-transparent">{item.label}</span>} {/* Keep space for non-active labels to prevent layout shift */}
-              </a>
+            <Link
+              key={item.href}
+              href={item.href}
+              className={cn(
+                'flex flex-col items-center justify-center rounded-full p-2.5 sm:p-3 transition-all duration-300 ease-in-out',
+                'w-16 h-14 sm:w-20 sm:h-16', // Slightly adjusted sizes for better touch targets
+                isActive
+                  ? 'bg-primary text-primary-foreground shadow-lg'
+                  : 'text-muted-foreground hover:text-primary hover:bg-primary/10 active:bg-primary/20',
+              )}
+              aria-label={item.label}
+            >
+              <item.icon className={cn('w-5 h-5 sm:w-6 sm:h-6', isActive ? 'text-primary-foreground': '')} />
+              {isActive && <span className="text-xs mt-0.5 sm:mt-1">{item.label}</span>}
+              {!isActive && <span className="text-xs mt-0.5 sm:mt-1 text-transparent">{item.label}</span>} {/* Keep space for non-active labels to prevent layout shift */}
             </Link>
           );
         })}
