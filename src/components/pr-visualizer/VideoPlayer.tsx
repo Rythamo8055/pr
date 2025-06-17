@@ -33,6 +33,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ prData, compositionId 
   useEffect(() => {
     // Reset player error if prData changes
     setPlayerError(null);
+    setIsPlayerComponentReady(false); // Reset ready state when new data comes
   }, [prData]);
 
   if (!prData) {
@@ -59,11 +60,11 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ prData, compositionId 
             }}
             controls
             loop={false}
-            showVolumeControls={true} // Enable volume controls for playback
+            showVolumeControls={true}
             clickToPlay
             onReady={() => {
               setIsPlayerComponentReady(true);
-              console.log("Remotion Player is ready.");
+              console.log("Remotion Player is ready for playback.");
             }}
             onError={(e) => {
               console.error("Remotion Player Error:", e);
@@ -79,11 +80,13 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ prData, compositionId 
         {!playerError && isPlayerComponentReady && (
           <p className="text-muted-foreground text-sm">Video ready for playback.</p>
         )}
-         {!playerError && !isPlayerComponentReady && (
+         {!playerError && !isPlayerComponentReady && !prData && ( // Only show loading if no prData yet
+          <p className="text-muted-foreground text-sm">Preparing video...</p>
+        )}
+         {!playerError && !isPlayerComponentReady && prData && ( // Show loading player if prData is there
           <p className="text-muted-foreground text-sm">Loading player...</p>
         )}
       </CardFooter>
     </Card>
   );
 };
-
