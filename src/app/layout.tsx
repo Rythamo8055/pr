@@ -45,15 +45,8 @@ export default function RootLayout({
 
   return (
     <html lang="en" suppressHydrationWarning>{/* suppressHydrationWarning for theme class changes */}
-<head>
-        <title>PR Visualizer</title> {/* Static title, or move to page.tsx for dynamic */}
-        <meta name="description" content="Visualize your GitHub Pull Requests dynamically." />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet" />
-        <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;700&display=swap" rel="stylesheet" />
-        <link href="https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@400;700&display=swap" rel="stylesheet" />
-      </head><body className="font-body antialiased min-h-screen flex flex-col pb-24">
+<head><title>PR Visualizer</title><meta name="description" content="Visualize your GitHub Pull Requests dynamically." /><link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" /><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet" /><link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;700&display=swap" rel="stylesheet" /><link href="https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@400;700&display=swap" rel="stylesheet" /></head>
+      <body className="font-body antialiased min-h-screen flex flex-col pb-24">
         {children}
         <BottomNavBar />
         <Toaster />
