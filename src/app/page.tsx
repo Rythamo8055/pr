@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -8,31 +9,56 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Terminal } from 'lucide-react';
 import { getPRData } from '@/app/actions/github';
 import type { PRData } from '@/lib/github-types';
+import type { HistoryEntry } from '@/lib/history-types';
 import { COMPOSITION_ID } from '@/remotion/config';
 import { useToast } from "@/hooks/use-toast";
 import Image from 'next/image';
+
+const MAX_HISTORY_ITEMS = 10;
 
 export default function HomePage() {
   const [prData, setPrData] = useState<PRData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [videoKey, setVideoKey] = useState(Date.now()); // To force re-render of Player
+  const [videoKey, setVideoKey] = useState(Date.now());
   const { toast } = useToast();
 
-  // Preload background image for Remotion scenes if any are defined with staticFile
   useEffect(() => {
-    // Example: if you had a staticFile('background.png') in a scene
-    // new window.Image().src = '/background.png'; // Assuming it's in public folder
-    // For this project, we use a placeholder directly or a generated one.
+    // Preload sounds or other assets if necessary
   }, []);
 
+  const addToHistory = (prUrl: string, data: PRData) => {
+    if (typeof window !== 'undefined') {
+      try {
+        const newEntry: HistoryEntry = {
+          id: String(data.prDetails.number),
+          title: data.prDetails.title,
+          prUrl: prUrl, // Use the submitted URL
+          timestamp: Date.now(),
+          repoName: data.prDetails.base.repo?.full_name || prUrl.split('/').slice(3, 5).join('/'),
+        };
 
-  const handleFormSubmit = async (data: { prUrl: string }) => {
+        const historyString = localStorage.getItem('prVisualizationHistory');
+        let history: HistoryEntry[] = historyString ? JSON.parse(historyString) : [];
+        
+        // Remove existing entry if any for the same PR to move it to top
+        history = history.filter(entry => entry.prUrl !== newEntry.prUrl);
+        history.unshift(newEntry);
+        history = history.slice(0, MAX_HISTORY_ITEMS);
+
+        localStorage.setItem('prVisualizationHistory', JSON.stringify(history));
+      } catch (e) {
+        console.error("Failed to save to history:", e);
+      }
+    }
+  };
+
+  const handleFormSubmit = async (formData: { prUrl: string }) => {
     setIsLoading(true);
     setError(null);
     setPrData(null);
 
-    const result = await getPRData(data.prUrl);
+    const result = await getPRData(formData.prUrl);
 
     if ('error' in result) {
       setError(result.error);
@@ -43,7 +69,8 @@ export default function HomePage() {
       });
     } else {
       setPrData(result);
-      setVideoKey(Date.now()); // Update key to re-mount Player with new props
+      addToHistory(formData.prUrl, result);
+      setVideoKey(Date.now());
     }
     setIsLoading(false);
   };
@@ -74,7 +101,7 @@ export default function HomePage() {
       {!isLoading && !prData && !error && (
          <div className="mt-12 text-center max-w-xl p-8 glassmorphism rounded-xl">
             <Image 
-              src="https://placehold.co/600x400.png" // Placeholder image
+              src="https://placehold.co/600x400.png"
               alt="Illustration of code merging or video editing"
               width={600}
               height={400}
