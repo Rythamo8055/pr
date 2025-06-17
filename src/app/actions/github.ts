@@ -104,9 +104,9 @@ export const getPRData = cache(async (prUrl: string): Promise<PRData | { error: 
       try {
         const insightsResult = await extractCodeInsights({ codeDiff: diff });
         codeInsights = insightsResult.insights;
-      } catch (e) {
-        console.error("Failed to extract code insights:", e);
-        // Proceed without insights if the AI flow fails
+      } catch (e: any) {
+        console.error("Failed to extract code insights (AI service might be unavailable):", e);
+        // Proceed without insights if the AI flow fails, codeInsights will be undefined
       }
     }
     
@@ -119,14 +119,25 @@ export const getPRData = cache(async (prUrl: string): Promise<PRData | { error: 
       codeInsights,
     };
   } catch (error: any) {
-    console.error("Error fetching PR data from GitHub API:", error);
+    console.error("Error in getPRData:", error); // Log the full error for debugging
+
+    // Check for specific GitHub API error statuses first
     if (error.status === 404) {
-        return { error: "Pull Request not found. Please check the URL or repository permissions." };
+      return { error: "Pull Request not found. Please check the URL or repository permissions." };
     }
     if (error.status === 401 || error.status === 403) {
-        return { error: "GitHub API authentication error. Check your GITHUB_TOKEN."}
+      return { error: "GitHub API authentication error. Please check your GITHUB_TOKEN." };
     }
-    return { error: `Failed to fetch PR data: ${error.message}` };
+
+    // Check if the error message is the specific AI service unavailability message
+    const errorMessageString = String(error.message || '');
+    if (errorMessageString.startsWith("No server is currently available to service your request")) {
+      // User sees a specific message for AI failure
+      return { error: "The AI code insights service is temporarily unavailable, so full PR data could not be retrieved. Please try again later." };
+    }
+
+    // Generic fallback error message
+    return { error: `Failed to fetch PR data: ${errorMessageString || 'An unknown error occurred'}` };
   }
 });
 
