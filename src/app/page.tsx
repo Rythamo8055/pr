@@ -107,6 +107,7 @@ export default function HomePage() {
               height={400}
               className="rounded-lg mb-6 shadow-lg mx-auto"
               data-ai-hint="code collaboration"
+              priority={true}
             />
             <h2 className="text-2xl font-headline text-primary-foreground mb-2">Visualize Your Pull Requests</h2>
             <p className="text-muted-foreground">
