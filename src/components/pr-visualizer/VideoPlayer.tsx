@@ -8,6 +8,7 @@ import { MyComposition } from '@/remotion';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { calculateVideoDuration } from '@/remotion/config';
 import { Loader2 } from 'lucide-react'; 
+import { Progress } from "@/components/ui/progress"; // Added import
 import dynamic from 'next/dynamic';
 
 const Player = dynamic(() => import('@remotion/player').then((mod) => mod.Player), {
@@ -29,10 +30,12 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ prData, compositionId 
   const playerRef = useRef<PlayerRef>(null);
   const [isPlayerComponentReady, setIsPlayerComponentReady] = useState(false);
   const [playerError, setPlayerError] = useState<string | null>(null);
+  const [playbackProgress, setPlaybackProgress] = useState(0); // State for playback progress
   
   useEffect(() => {
-    // Reset player error if prData changes
+    // Reset player error and progress if prData changes
     setPlayerError(null);
+    setPlaybackProgress(0);
     setIsPlayerComponentReady(false); // Reset ready state when new data comes
   }, [prData]);
 
@@ -41,6 +44,15 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ prData, compositionId 
   }
 
   const { durationInFrames, width, height, fps } = calculateVideoDuration(prData);
+
+  const handleFrameUpdate = (e: { currentFrame: number }) => {
+    if (durationInFrames > 0) {
+      const progress = (e.currentFrame / durationInFrames) * 100;
+      setPlaybackProgress(progress);
+    } else {
+      setPlaybackProgress(0);
+    }
+  };
 
   return (
     <Card className="w-full max-w-4xl mt-8 glassmorphism">
@@ -70,23 +82,27 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ prData, compositionId 
               console.error("Remotion Player Error:", e);
               setPlayerError(`Player error: ${e.message || 'Unknown player error'}`);
             }}
+            onFrameUpdate={handleFrameUpdate} // Get frame updates for progress
           />
         </div>
       </CardContent>
-      <CardFooter className="flex flex-col items-center justify-center p-4 md:p-6 pt-0 md:pt-0 min-h-[60px]">
+      <CardFooter className="flex flex-col items-center justify-center p-4 pt-2 pb-4">
         {playerError && (
-           <p className="text-destructive text-sm">Error: {playerError}</p>
+           <p className="text-destructive text-sm text-center">Player Error: {playerError}</p>
         )}
-        {!playerError && isPlayerComponentReady && (
-          <p className="text-muted-foreground text-sm">Video ready for playback.</p>
-        )}
-         {!playerError && !isPlayerComponentReady && !prData && ( // Only show loading if no prData yet
-          <p className="text-muted-foreground text-sm">Preparing video...</p>
-        )}
-         {!playerError && !isPlayerComponentReady && prData && ( // Show loading player if prData is there
+        {!playerError && !isPlayerComponentReady && (
           <p className="text-muted-foreground text-sm">Loading player...</p>
+        )}
+        {!playerError && isPlayerComponentReady && prData && (
+          <div className="w-full max-w-xl mt-1"> {/* Container for progress bar and text */}
+            <Progress value={playbackProgress} className="w-full" /> {/* Default h-4 */}
+            <p className="text-xs text-muted-foreground text-center mt-1">
+              {`${Math.round(playbackProgress)}% played`}
+            </p>
+          </div>
         )}
       </CardFooter>
     </Card>
   );
 };
+
