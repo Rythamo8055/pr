@@ -8,7 +8,7 @@ import { MyComposition } from '@/remotion';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { calculateVideoDuration } from '@/remotion/config';
 import { Loader2 } from 'lucide-react'; 
-import { Progress } from "@/components/ui/progress"; // Added import
+import { Progress } from "@/components/ui/progress";
 import dynamic from 'next/dynamic';
 
 const Player = dynamic(() => import('@remotion/player').then((mod) => mod.Player), {
@@ -30,13 +30,12 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ prData, compositionId 
   const playerRef = useRef<PlayerRef>(null);
   const [isPlayerComponentReady, setIsPlayerComponentReady] = useState(false);
   const [playerError, setPlayerError] = useState<string | null>(null);
-  const [playbackProgress, setPlaybackProgress] = useState(0); // State for playback progress
+  const [playbackProgress, setPlaybackProgress] = useState(0);
   
   useEffect(() => {
-    // Reset player error and progress if prData changes
     setPlayerError(null);
     setPlaybackProgress(0);
-    setIsPlayerComponentReady(false); // Reset ready state when new data comes
+    setIsPlayerComponentReady(false);
   }, [prData]);
 
   if (!prData) {
@@ -82,7 +81,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ prData, compositionId 
               console.error("Remotion Player Error:", e);
               setPlayerError(`Player error: ${e.message || 'Unknown player error'}`);
             }}
-            onFrameUpdate={handleFrameUpdate} // Get frame updates for progress
+            onFrameUpdate={handleFrameUpdate}
           />
         </div>
       </CardContent>
@@ -90,12 +89,12 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ prData, compositionId 
         {playerError && (
            <p className="text-destructive text-sm text-center">Player Error: {playerError}</p>
         )}
-        {!playerError && !isPlayerComponentReady && (
-          <p className="text-muted-foreground text-sm">Loading player...</p>
+        {!playerError && !isPlayerComponentReady && prData && (
+          <p className="text-muted-foreground text-sm">Player is loading...</p> 
         )}
         {!playerError && isPlayerComponentReady && prData && (
-          <div className="w-full max-w-xl mt-1"> {/* Container for progress bar and text */}
-            <Progress value={playbackProgress} className="w-full" /> {/* Default h-4 */}
+          <div className="w-full max-w-xl mt-1">
+            <Progress value={playbackProgress} className="w-full h-2" />
             <p className="text-xs text-muted-foreground text-center mt-1">
               {`${Math.round(playbackProgress)}% played`}
             </p>
@@ -105,4 +104,3 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ prData, compositionId 
     </Card>
   );
 };
-

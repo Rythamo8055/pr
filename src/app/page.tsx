@@ -13,6 +13,7 @@ import type { HistoryEntry } from '@/lib/history-types';
 import { COMPOSITION_ID } from '@/remotion/config';
 import { useToast } from "@/hooks/use-toast";
 import Image from 'next/image';
+import { Progress } from "@/components/ui/progress"; // Import Progress component
 
 const MAX_HISTORY_ITEMS = 10;
 
@@ -41,7 +42,6 @@ export default function HomePage() {
         const historyString = localStorage.getItem('prVisualizationHistory');
         let history: HistoryEntry[] = historyString ? JSON.parse(historyString) : [];
         
-        // Remove existing entry if any for the same PR to move it to top
         history = history.filter(entry => entry.prUrl !== newEntry.prUrl);
         history.unshift(newEntry);
         history = history.slice(0, MAX_HISTORY_ITEMS);
@@ -80,9 +80,10 @@ export default function HomePage() {
       <UrlForm onSubmit={handleFormSubmit} isLoading={isLoading} />
 
       {isLoading && (
-        <div className="mt-8 flex flex-col items-center glassmorphism p-8 rounded-xl">
+        <div className="mt-8 flex flex-col items-center glassmorphism p-8 rounded-xl w-full max-w-lg">
           <LoadingSpinner size="lg" />
           <p className="mt-4 text-lg text-primary-foreground">Fetching PR data & preparing video...</p>
+          <Progress value={50} className="w-full mt-3 h-2 animate-pulse" /> {/* Indeterminate progress bar */}
         </div>
       )}
 
